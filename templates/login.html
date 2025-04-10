@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hospital Login - Weekly Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f8fb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 50px;
+    }
+    .login-container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      margin-top: 10px;
+      display: block;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      background-color: #3498db;
+      color: white;
+      padding: 10px;
+      border: none;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+    iframe {
+      margin-top: 30px;
+      border: none;
+      width: 100%;
+      height: 600px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container" id="login-section">
+    <h2>Hospital Dashboard Login</h2>
+    <label for="username">Hospital ID</label>
+    <input type="text" id="username" placeholder="Hospital_A" />
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="••••••••" />
+    <button onclick="login()">Login</button>
+    <div class="error" id="error"></div>
+  </div>
+
+  <div id="iframe-container"></div>
+
+  <script>
+    async function login() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const errorEl = document.getElementById("error");
+
+      const body = new URLSearchParams();
+      body.append("username", username);
+      body.append("password", password);
+
+      try {
+        const tokenRes = await fetch("/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body,
+        });
+
+        const tokenData = await tokenRes.json();
+
+        if (!tokenRes.ok) {
+          errorEl.textContent = tokenData.detail || "Invalid login";
+          return;
+        }
+
+        const embedRes = await fetch("/grafana-embed", {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
+        });
+
+        const iframeHTML = await embedRes.text();
+
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("iframe-container").innerHTML = iframeHTML;
+      } catch (err) {
+        errorEl.textContent = "Login failed or server error.";
+      }
+    }
+  </script>
+</body>
+</html>
